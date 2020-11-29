@@ -1,10 +1,21 @@
+import tempfile
+import time
+
 import requests
+from celery import chain
+from celery.utils.log import get_task_logger
 
 from project.celery_app import app
+
+logger = get_task_logger(__name__)
 
 
 class AppError(Exception):
     pass
+
+
+manual_retry_counter = 0
+auto_retry_counter = 0
 
 
 @app.task()
@@ -12,12 +23,26 @@ def simple_one(x):
     return x
 
 
+@app.task(bind=True)
+def manually_retrying_task(self, x: int):
+    logger.info(f"Attempting to run with {x}")
+    global manual_retry_counter
+    manual_retry_counter += 1
+    try:
+        raise AppError
+    except AppError as exc:
+        raise self.retry(exc=exc, max_retries=3, countdown=1)
+
+
 @app.task(
     autoretry_for=(AppError,),
     retry_kwargs={"max_retries": 3},
-    retry_backoff=2,
+    retry_backoff=1,
 )
-def retrying_task():
+def auto_retrying_task(x: int):
+    logger.info(f"Attempting to run with {x}")
+    global auto_retry_counter
+    auto_retry_counter += 1
     raise AppError
 
 
@@ -31,3 +56,13 @@ def first_part(url: str):
 @app.task()
 def second_part(data: str):
     """Do something with the result like additional processing and saving into db."""
+    logger.info(f"Doing something with {data}")
+    with tempfile.TemporaryFile() as destination:
+        destination.write(data.encode())
+
+
+@app.task()
+def run_both(url: str):
+    """A task that calls other tasks."""
+    url += f"?t={int(time.time())}"
+    chain(first_part.s(url), second_part.s()).delay()
