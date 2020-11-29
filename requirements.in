@@ -2,3 +2,4 @@ celery<5.0
 pytest
 requests
 redis
+responses

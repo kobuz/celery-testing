@@ -1,4 +1,3 @@
-import tempfile
 import time
 
 import requests
@@ -12,6 +11,11 @@ logger = get_task_logger(__name__)
 
 class AppError(Exception):
     pass
+
+
+class DB:
+    def write(self, data):
+        raise NotImplemented
 
 
 manual_retry_counter = 0
@@ -50,6 +54,7 @@ def auto_retrying_task(x: int):
 def first_part(url: str):
     """Fetch some data"""
     response = requests.get(url)
+    time.sleep(1)  # pretend something is happening
     return response.json()["data"]
 
 
@@ -57,8 +62,9 @@ def first_part(url: str):
 def second_part(data: str):
     """Do something with the result like additional processing and saving into db."""
     logger.info(f"Doing something with {data}")
-    with tempfile.TemporaryFile() as destination:
-        destination.write(data.encode())
+    db = DB()
+    time.sleep(1)  # pretend something is happening
+    db.write(data)
 
 
 @app.task()
