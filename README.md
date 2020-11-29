@@ -31,6 +31,9 @@ unexpected behaviour
 There are two tests module: one for testing tasks created with shared_task and another one with project's Celery app.
 Most of interesting details are included in docstring of these two modules.
 
+Note that there are no external dependencies like RabbitMQ or Redis that are usually seen around Celery.
+That's because these tests rely on in-memory broker and result backend build into Celery for test purposes, yay!
+
 Run both with
 ```bash
 $ docker-compose run --rm app sh test.sh
