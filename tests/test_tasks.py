@@ -44,6 +44,7 @@ def celery_worker_parameters():
 
 @pytest.fixture(scope="session")
 def celery_session_app():
+    # this app is already configured and doesn't allow to be changed, look at docstring point 1)
     return app
 
 
@@ -81,6 +82,7 @@ def mock_requests():
 
 @pytest.fixture
 def mock_db():
+    """The implementation in tasks.py would end with an error."""
     db = mock.Mock(spec=tasks.DB)
     with mock.patch("project.tasks.DB", return_value=db):
         yield db
@@ -94,6 +96,8 @@ def test_run_both(celery_session_worker, mock_requests, mock_db):
         json={"data": "something interesting"},
     )
     task = tasks.run_both.delay("http://example.com")
-    time.sleep(3)  # now with shorter sleep period it fails and the longer `task.get timeout` doesn't help
+    # now with shorter sleep period it fails and the longer `task.get timeout` doesn't help
+    # check module docstring point 2) to see why
+    time.sleep(3)
     task.get(timeout=3)
     mock_db.write.assert_called_once_with("something interesting")
