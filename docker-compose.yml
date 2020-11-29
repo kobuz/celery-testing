@@ -1,14 +1,9 @@
 version: '3'
 
 services:
-  redis:
-    image: redis:latest
-
   app:
     build: .
     working_dir: /app
     command: celery -A project.celery_app worker --loglevel=info
     volumes:
       - .:/app
-    depends_on:
-      - redis
